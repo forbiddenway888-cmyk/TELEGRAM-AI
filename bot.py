@@ -35,10 +35,15 @@ def webhook():
                 data = {"model": "llama3-8b-8192", "messages": [{"role": "user", "content": user_prompt}]}
                 
                 try:
-                    groq_res = requests.post(groq_url, headers=headers, json=data).json()
-                    ai_reply = groq_res["choices"][0]["message"]["content"]
+                    res = requests.post(groq_url, headers=headers, json=data)
+                    if res.status_code != 200:
+                        # This will send the exact API error back to Telegram
+                        ai_reply = f"⚠️ Forbid API Error {res.status_code}: {res.text}"
+                    else:
+                        ai_reply = res.json()["choices"][0]["message"]["content"]
                 except Exception as e:
-                    ai_reply = "⚠️ Error: Could not connect to Groq."
+                    # This catches Python-level crashes
+                    ai_reply = f"⚠️ System Error: {str(e)}"
                     
                 requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": ai_reply})
                 return "OK", 200
