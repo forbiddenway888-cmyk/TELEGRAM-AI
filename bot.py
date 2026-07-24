@@ -36,7 +36,7 @@ def webhook():
             keyboard_layout = {
                 "keyboard": [
                     [{"text": "🤖 AI"}, {"text": "🎨 Image"}],
-                    [{"text": "📡 Num Info"}, {"text": "⚙️ Settings"}]
+                    [{"text": "📡 Num Info"}, {"text": "📧 Email Info"}]
                 ],
                 "resize_keyboard": True
             }
@@ -222,7 +222,7 @@ def webhook():
         # --------------------------------------------------
         # 5. F0RB1D // DEEP EMAIL RECON & LEAK MATRIX
         # --------------------------------------------------
-        elif text.startswith("/email"):
+        elif text.startswith("/email") or text == "📧 Email Info":
             current_time = time.time()
             last_time = USER_LAST_MSG_TIME.get(chat_id, 0)
             
@@ -234,7 +234,8 @@ def webhook():
             
             USER_LAST_MSG_TIME[chat_id] = current_time
 
-            target_email = text.replace("/email", "").strip().lower()
+            # Filter out both the command and the button text to get the raw email
+            target_email = text.replace("/email", "").replace("📧 Email Info", "").strip().lower()
             
             import re
             if target_email and re.match(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$", target_email):
