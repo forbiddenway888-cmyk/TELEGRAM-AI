@@ -90,16 +90,30 @@ def webhook():
             )
             requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": intro_msg, "parse_mode": "Markdown"})
 
-        # 3. IMAGE GENERATOR
+        # 3. IMAGE GENERATOR (Pure & Free)
         elif text.startswith("/image") or text == "🎨 Image":
             prompt = text.replace("/image", "").strip() if text.startswith("/image") else ""
             
-            # If they provided a prompt in the same command (e.g. "/image cyberpunk city")
+            # If they provided a prompt right away
             if prompt:
-                # Trigger image generation directly
-                generate_image(chat_id, prompt)
+                load_payload = {"chat_id": chat_id, "text": "🎨 `RENDERING PIXELS...`", "parse_mode": "Markdown"}
+                loading_msg = requests.post(f"{TELEGRAM_API}/sendMessage", json=load_payload).json()
+                msg_id = loading_msg["result"]["message_id"]
+                
+                safe_prompt = urllib.parse.quote(prompt)
+                image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?nologo=true"
+                
+                # Delete the loading text and send the photo
+                requests.post(f"{TELEGRAM_API}/deleteMessage", json={"chat_id": chat_id, "message_id": msg_id})
+                
+                payload = {
+                    "chat_id": chat_id,
+                    "photo": image_url,
+                    "caption": f"⚡ Generated: {prompt}"
+                }
+                requests.post(f"{TELEGRAM_API}/sendPhoto", json=payload)
             else:
-                # Set user state so their VERY NEXT message becomes the image prompt
+                # Set user state so their next message becomes the prompt
                 USER_STATE[chat_id] = "AWAITING_IMAGE_PROMPT"
                 
                 msg = (
