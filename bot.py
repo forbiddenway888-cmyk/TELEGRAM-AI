@@ -150,10 +150,104 @@ def webhook():
                     "parse_mode": "Markdown"
                 }
                 requests.post(f"{TELEGRAM_API}/sendMessage", json=payload)
-        # 4. SYSTEM OPS
-        elif text.startswith("/ops") or text == "📡 Ops":
-            payload = {"chat_id": chat_id, "text": "🟢 SYSTEM NOMINAL. Bandwidth usage: Ultra-Low."}
-            requests.post(f"{TELEGRAM_API}/sendMessage", json=payload)
+        # 4. NUMBER INFO LOOKUP (Truecaller Educational Engine)
+        elif text.startswith("/num") or text == "📡 Num Info":
+            # --- ANTI-SPAM COOLDOWN ---
+            current_time = time.time()
+            last_time = USER_LAST_MSG_TIME.get(chat_id, 0)
+            
+            if current_time - last_time < 3:
+                remaining = round(3 - (current_time - last_time), 1)
+                cooldown_msg = f"⏳ **SYSTEM OVERLOAD**\nProtocol locked. Please wait `{remaining}s` before next query."
+                requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": cooldown_msg, "parse_mode": "Markdown"})
+                return "OK", 200
+            
+            USER_LAST_MSG_TIME[chat_id] = current_time
+            # ---------------------------------
+
+            phone_number = text.replace("/num", "").strip() if text.startswith("/num") else ""
+            
+            if phone_number:
+                requests.post(f"{TELEGRAM_API}/sendChatAction", json={"chat_id": chat_id, "action": "typing"})
+                
+                # Pick an elite search loading line
+                loading_phrases = [
+                    "📡 `[MAFIA GANG DB] Querying global node registers...`",
+                    "🔍 `[F0RB1D INTEL] Scanning encrypted carrier networks...`",
+                    "⚡ `[CORE SYSTEM] Cross-referencing local intelligence logs...`"
+                ]
+                load_payload = {"chat_id": chat_id, "text": random.choice(loading_phrases), "parse_mode": "Markdown"}
+                loading_msg = requests.post(f"{TELEGRAM_API}/sendMessage", json=load_payload).json()
+                msg_id = loading_msg["result"]["message_id"]
+                
+                # Fetching live data via TruecallerPy (Educational Implementation)
+                try:
+                    from truecallerpy import search_phonenumber
+                    # Note: Requires TRUECALLER_INSTALL_ID env variable set on Render
+                    tc_token = os.getenv("TRUECALLER_INSTALL_ID")
+                    
+                    # Clean the number format
+                    clean_num = phone_number.replace(" ", "").replace("+", "")
+                    country_code = "+91" # Default country code adjustment if needed
+                    if not phone_number.startswith("+"):
+                        formatted_num = f"+91{clean_num}"
+                    else:
+                        formatted_num = phone_number
+
+                    # Execute lookup
+                    response = search_phonenumber(formatted_num, country_code, tc_token)
+                    
+                    requests.post(f"{TELEGRAM_API}/deleteMessage", json={"chat_id": chat_id, "message_id": msg_id})
+                    
+                    if response and "data" in response:
+                        data = response["data"][0]
+                        name = data.get("name", "UNKNOWN")
+                        carrier = data.get("phones", [{}])[0].get("carrier", "N/A")
+                        city = data.get("addresses", [{}])[0].get("city", "N/A")
+                        country = data.get("addresses", [{}])[0].get("countryCode", "N/A")
+                        
+                        result_msg = (
+                            "📡 **F0RB1D // DATABASE INTEL**\n"
+                            "━━━━━━━━━━━━━━━━━━━━━━\n"
+                            f"👤 **Target Name:** `{name}`\n"
+                            f"📞 **Number:** `{formatted_num}`\n"
+                            f"🌐 **Carrier:** `{carrier}`\n"
+                            f"📍 **Location:** `{city}, {country}`\n"
+                            "━━━━━━━━━━━━━━━━━━━━━━\n"
+                            "⚡ _Source: Secure Internal Database_"
+                        )
+                    else:
+                        result_msg = f"📡 **F0RB1D // INTEL REPORT**\n━━━━━━━━━━━━━━━━━━━━━━\n❌ Target `{phone_number}` not found in internal registers."
+                        
+                    requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": result_msg, "parse_mode": "Markdown"})
+                        
+                except Exception as e:
+                    requests.post(f"{TELEGRAM_API}/deleteMessage", json={"chat_id": chat_id, "message_id": msg_id})
+                    err_msg = (
+                        "📡 **F0RB1D // INTEL REPORT**\n"
+                        "━━━━━━━━━━━━━━━━━━━━━━\n"
+                        f"👤 **Target Name:** `UNKNOWN_ENTITY`\n"
+                        f"📞 **Query:** `{phone_number}`\n"
+                        f"🌐 **Carrier:** `Encrypted / Private`\n"
+                        f"📍 **Location:** `Restricted Region`\n"
+                        "━━━━━━━━━━━━━━━━━━━━━━\n"
+                        "⚡ _Source: Secure Internal Database_"
+                    )
+                    requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": err_msg, "parse_mode": "Markdown"})
+            else:
+                payload = {
+                    "chat_id": chat_id,
+                    "text": (
+                        "📡 **F0RB1D // DATABASE SEARCH**\n"
+                        "━━━━━━━━━━━━━━━━━━━━━━\n"
+                        "⚠️ `ERROR: TARGET NUMBER MISSING`\n\n"
+                        "Syntax required:\n"
+                        "└─ `/num [phone number]`\n\n"
+                        "_Example: `/num +919876543210`_"
+                    ),
+                    "parse_mode": "Markdown"
+                }
+                requests.post(f"{TELEGRAM_API}/sendMessage", json=payload)
 
         # 6. AUTO-AI CATCH-ALL & MEMORY
         else:
