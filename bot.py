@@ -22,7 +22,7 @@ def webhook():
         chat_id = update["message"]["chat"]["id"]
         text = update["message"]["text"]
 
-        # 6. AUTO-AI CATCH-ALL & MEMORY
+            # 6. AUTO-AI CATCH-ALL & MEMORY
         else:
             requests.post(f"{TELEGRAM_API}/sendChatAction", json={"chat_id": chat_id, "action": "typing"})
             
