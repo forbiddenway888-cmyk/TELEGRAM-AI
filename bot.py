@@ -112,13 +112,4 @@ def webhook():
             payload = {"chat_id": chat_id, "text": "🟢 SYSTEM NOMINAL. Bandwidth usage: Ultra-Low."}
             requests.post(f"{TELEGRAM_API}/sendMessage", json=payload)
 
-        # 5. SETTINGS
-        elif text == "⚙️ Settings":
-            payload = {"chat_id": chat_id, "text": "⚙️ Settings module is currently locked."}
-            requests.post(f"{TELEGRAM_API}/sendMessage", json=payload)
-
-    return "OK", 200
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+        v
