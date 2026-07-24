@@ -81,7 +81,7 @@ def webhook():
                     # Save F0RB1D's live greeting to memory so it remembers saying it
                     USER_MEMORY[chat_id].append({"role": "assistant", "content": ai_reply})
                 else:
-                    ai_reply = f"⚠️ Groq Error {res.status_code}"
+                    ai_reply = f"⚠️ Forbid API Error {res.status_code}"
             except Exception as e:
                 ai_reply = f"⚠️ System Error: {str(e)}"
                 
@@ -162,7 +162,7 @@ def webhook():
                     ai_reply = res.json()["choices"][0]["message"]["content"]
                     USER_MEMORY[chat_id].append({"role": "assistant", "content": ai_reply})
                 else:
-                    ai_reply = f"⚠️ Groq Error {res.status_code}"
+                    ai_reply = f"⚠️ Forbid API Error {res.status_code}"
             except Exception as e:
                 ai_reply = f"⚠️ System Error: {str(e)}"
                 
