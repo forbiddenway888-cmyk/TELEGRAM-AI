@@ -67,8 +67,17 @@ def webhook():
             prompt = text.replace("/image", "").strip() if text.startswith("/image") else ""
             
             if prompt:
-                # 1. Send loading message
-                load_payload = {"chat_id": chat_id, "text": "🎨 `RENDERING PIXELS...`", "parse_mode": "Markdown"}
+                # 1. Pick a random elite loading message (Zero extra bandwidth)
+                loading_phrases = [
+                    "⚡ `[F0RB1D API] Interfacing with Pollinations...`",
+                    "🎨 `[VISUAL ENGINE] Compiling neural pixels...`",
+                    "🌐 `[MAFIA GANG NET] Establishing image uplink...`",
+                    "⚙️ `[F0RB1D CORE] Generating visual matrix...`"
+                ]
+                chosen_text = random.choice(loading_phrases)
+                
+                # Send the chosen random loading message
+                load_payload = {"chat_id": chat_id, "text": chosen_text, "parse_mode": "Markdown"}
                 loading_msg = requests.post(f"{TELEGRAM_API}/sendMessage", json=load_payload).json()
                 msg_id = loading_msg["result"]["message_id"]
                 
@@ -87,7 +96,7 @@ def webhook():
                 requests.post(f"{TELEGRAM_API}/sendPhoto", json=payload)
             else:
                 # Prompt was empty, remind them how to use it
-                payload = {"chat_id": chat_id, "text": "To generate an image, type `/image [your idea]`"}
+                payload = {"chat_id": chat_id, "text": "To generate an image, type /image [your idea]"}
                 requests.post(f"{TELEGRAM_API}/sendMessage", json=payload)
         # 4. SYSTEM OPS
         elif text.startswith("/ops") or text == "📡 Ops":
