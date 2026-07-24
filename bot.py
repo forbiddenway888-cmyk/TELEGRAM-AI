@@ -46,12 +46,16 @@ def webhook():
 
         # 2. TRIGGER THE AI PROMPT
         elif text.startswith("/ai") or text == "🤖 AI":
-            payload = {
-                "chat_id": chat_id,
-                "text": "🤖 What do you want to ask the AI?",
-                "reply_markup": {"force_reply": True} 
-            }
-            requests.post(f"{TELEGRAM_API}/sendMessage", json=payload)
+            intro_msg = (
+                "⚡ **F0RB1D // NEURAL LINK ESTABLISHED**\n\n"
+                "I am online and listening. You don't need to use commands to talk to me—just type your message.\n\n"
+                "**Available Protocols:**\n"
+                "👾 `Write & Debug Complex Code`\n"
+                "🧠 `Deep Conversational Logic`\n"
+                "🌐 `System Analysis & Strategy`\n\n"
+                "_Initiate prompt sequence below..._"
+            )
+            requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": intro_msg, "parse_mode": "Markdown"})
 
         # 3. IMAGE GENERATOR (Works for both button click AND /image command)
         elif text.startswith("/image") or text == "🎨 Image":
@@ -79,9 +83,12 @@ def webhook():
         else:
             requests.post(f"{TELEGRAM_API}/sendChatAction", json={"chat_id": chat_id, "action": "typing"})
             
+            # Create memory for this user if it doesn't exist
             if chat_id not in USER_MEMORY:
-                USER_MEMORY[chat_id] = [{"role": "system", "content": "You are a friendly, highly intelligent AI. Use emojis dynamically and naturally woven into your sentences to connect emotionally with the user. Do not just put them at the end of sentences."}]
-            
+                USER_MEMORY[chat_id] = [{
+                    "role": "system", 
+                    "content": "You are the F0RB1D AI, an elite, highly intelligent neural network. Format all your responses using clean Markdown. Use bolding for key terms, format all code perfectly in code blocks, and use bullet points for lists. Weave emojis dynamically to connect emotionally with the user. Keep your tone sharp, professional, and slightly futuristic."
+                }]
             USER_MEMORY[chat_id].append({"role": "user", "content": text})
             
             if len(USER_MEMORY[chat_id]) > 5:
