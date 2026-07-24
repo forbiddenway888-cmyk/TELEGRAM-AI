@@ -95,7 +95,7 @@ def webhook():
             payload = {"chat_id": chat_id, "text": "🟢 SYSTEM NOMINAL. Bandwidth usage: Ultra-Low."}
             requests.post(f"{TELEGRAM_API}/sendMessage", json=payload)
 
-        # 6. AUTO-AI CATCH-ALL & MEMORY (This replaces the old Settings block)
+        # 6. AUTO-AI CATCH-ALL & MEMORY
         else:
             requests.post(f"{TELEGRAM_API}/sendChatAction", json={"chat_id": chat_id, "action": "typing"})
             
@@ -113,12 +113,7 @@ def webhook():
             if len(USER_MEMORY[chat_id]) > 5:
                 USER_MEMORY[chat_id] = [USER_MEMORY[chat_id][0]] + USER_MEMORY[chat_id][-4:]
             
-            # 1. SEND THE "ANIMATED" LOADING STATUS FIRST (Crucial for msg_id)
-            load_payload = {"chat_id": chat_id, "text": "✨ _F0RB1D is analyzing your neural patterns..._", "parse_mode": "Markdown"}
-            loading_msg = requests.post(f"{TELEGRAM_API}/sendMessage", json=load_payload).json()
-            msg_id = loading_msg["result"]["message_id"]
-            
-            # 2. CALL GROQ API
+            # CALL GROQ API
             groq_url = "https://api.groq.com/openai/v1/chat/completions"
             headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
             data = {"model": "llama-3.1-8b-instant", "messages": USER_MEMORY[chat_id]}
@@ -133,27 +128,8 @@ def webhook():
             except Exception as e:
                 ai_reply = f"⚠️ System Error: {str(e)}"
                 
-            # 3. THE 200 IQ CHUNK STREAMER (BACKGROUND THREAD)
-            def stream_text(chat_id, msg_id, full_text):
-                words = full_text.split()
-                # Split into 3 visual chunks to stay under Telegram's rate limit
-                chunk_size = max(1, len(words) // 3)
-                current_text = ""
-                
-                for i in range(0, len(words), chunk_size):
-                    chunk = " ".join(words[i:i+chunk_size])
-                    current_text += chunk + " "
-                    # Edit the message to show the growing text + a typing cursor
-                    edit_payload = {"chat_id": chat_id, "message_id": msg_id, "text": current_text + " █", "parse_mode": "Markdown"}
-                    requests.post(f"{TELEGRAM_API}/editMessageText", json=edit_payload)
-                    time.sleep(1.5) # The golden ratio: fast enough to look cool, slow enough to avoid bans
-                    
-                # Final edit: lock in the complete beautiful Markdown text
-                final_payload = {"chat_id": chat_id, "message_id": msg_id, "text": full_text, "parse_mode": "Markdown"}
-                requests.post(f"{TELEGRAM_API}/editMessageText", json=final_payload)
-
-            # Fire off the thread so the server doesn't freeze!
-            threading.Thread(target=stream_text, args=(chat_id, msg_id, ai_reply)).start()
+            # SEND DIRECTLY - No threading, no fake loading, just pure speed
+            requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": ai_reply, "parse_mode": "Markdown"})
 
     return "OK", 200
 
