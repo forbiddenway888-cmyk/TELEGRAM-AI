@@ -220,7 +220,7 @@ def webhook():
                 requests.post(f"{TELEGRAM_API}/sendMessage", json=payload)
 
         # --------------------------------------------------
-        # 5. ULTRA-DEEP GOOGLE OSINT ENGINE (GHunt/Epieos Method)
+        # 5. ULTRA-DEEP EMAIL OSINT ENGINE (Public Data + Dorks)
         # --------------------------------------------------
         elif text.startswith("/email"):
             current_time = time.time()
@@ -236,53 +236,72 @@ def webhook():
 
             target_email = text.replace("/email", "").strip().lower()
             
-            if target_email and "@" in target_email:
+            import re
+            # Validate email format
+            if target_email and re.match(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$", target_email):
                 requests.post(f"{TELEGRAM_API}/sendChatAction", json={"chat_id": chat_id, "action": "typing"})
                 
                 # Send fast status feedback
-                load_payload = {"chat_id": chat_id, "text": "📡 `[F0RB1D OSINT] Intercepting Google Account & Maps Footprint...`", "parse_mode": "Markdown"}
+                load_payload = {"chat_id": chat_id, "text": "📡 `[F0RB1D OSINT] Extracting public network data...`", "parse_mode": "Markdown"}
                 loading_msg = requests.post(f"{TELEGRAM_API}/sendMessage", json=load_payload).json()
                 msg_id = loading_msg.get("result", {}).get("message_id")
 
                 try:
                     import urllib.parse
-                    import re
-
+                    
                     username = target_email.split("@")[0]
                     domain = target_email.split("@")[1]
 
-                    # 1. Direct Epieos Reverse Lookup Link (Extracts Name, Maps Reviews, Photos)
-                    epieos_url = f"https://epieos.com/?q={target_email}&t=email"
+                    # 1. LIVE PUBLIC API CHECK (emailrep.io - free, no key needed)
+                    reputation = "Unknown"
+                    suspicious = "Unknown"
+                    blacklisted = "Unknown"
+                    data_breaches = "Unknown"
                     
-                    # 2. Automated Google Dorking Queries
-                    maps_dork = urllib.parse.quote(f'site:google.com/maps/contrib/ "{target_email}" OR "{username}"')
-                    google_maps_url = f"https://www.google.com/search?q={maps_dork}"
-                    
-                    docs_dork = urllib.parse.quote(f'site:drive.google.com OR site:docs.google.com "{target_email}"')
-                    google_docs_url = f"https://www.google.com/search?q={docs_dork}"
+                    try:
+                        headers = {"User-Agent": "F0RB1D-OSINT-Protocol"}
+                        rep_res = requests.get(f"https://emailrep.io/{target_email}", headers=headers, timeout=5)
+                        if rep_res.status_code == 200:
+                            data = rep_res.json()
+                            reputation = data.get("reputation", "Unknown").capitalize()
+                            suspicious = "Yes ⚠️" if data.get("suspicious") else "No ✅"
+                            blacklisted = "Yes 🚫" if data.get("details", {}).get("blacklisted") else "No ✅"
+                            data_breaches = "Compromised 🚨" if data.get("details", {}).get("credentials_leaked") else "Clean ✅"
+                    except:
+                        # Fallback if API is unreachable
+                        pass
 
-                    leak_dork = urllib.parse.quote(f'"{target_email}" filetype:txt OR filetype:csv OR filetype:pdf')
-                    leak_url = f"https://www.google.com/search?q={leak_dork}"
+                    # 2. Automated Deep Links (Dorks & Epieos)
+                    epieos_url = f"https://epieos.com/?q={target_email}&t=email"
+                    maps_dork = urllib.parse.quote(f'site:google.com/maps/contrib/ "{target_email}"')
+                    docs_dork = urllib.parse.quote(f'site:drive.google.com OR site:docs.google.com "{target_email}"')
+                    paste_dork = urllib.parse.quote(f'"{target_email}" site:pastebin.com')
 
                     # Clean up loading indicator
                     if msg_id:
                         requests.post(f"{TELEGRAM_API}/deleteMessage", json={"chat_id": chat_id, "message_id": msg_id})
 
-                    # 3. Format the GHunt-Style Deep Intel Report
+                    # 3. Format the F0RB1D OSINT Report
                     result_msg = (
-                        "📡 **F0RB1D // GOOGLE ACCOUNT DEEP INTEL**\n"
+                        "📡 **F0RB1D // EMAIL OSINT REPORT**\n"
                         "━━━━━━━━━━━━━━━━━━━━━━\n"
                         f"🎯 **Target Node:** `{target_email}`\n"
                         f"👤 **Extracted Handle:** `{username}`\n"
                         f"🌐 **Domain Host:** `{domain}`\n"
                         "━━━━━━━━━━━━━━━━━━━━━━\n"
-                        "📍 **GOOGLE MAPS & GOOGLE ACCOUNT FOOTPRINT:**\n"
-                        f"├─ 👤 [Pull Real Name & Maps Reviews]({epieos_url})\n"
-                        f"├─ 🗺️ [Search Public Maps Contributions]({google_maps_url})\n"
-                        f"├─ 📄 [Search Exposed Google Drive/Docs]({google_docs_url})\n"
-                        f"└─ 🔓 [Scan Public Paste/Data Leaks]({leak_url})\n"
+                        "📊 **THREAT & BREACH STATUS:**\n"
+                        f"├─ **Reputation:** `{reputation}`\n"
+                        f"├─ **Suspicious:** `{suspicious}`\n"
+                        f"├─ **Blacklisted:** `{blacklisted}`\n"
+                        f"└─ **Data Breaches:** `{data_breaches}`\n"
                         "━━━━━━━━━━━━━━━━━━━━━━\n"
-                        "⚡ _Source: GHunt & Epieos Recon Matrix_"
+                        "📍 **DEEP FOOTPRINT LINKS:**\n"
+                        f"├─ 👤 [Pull Real Name & Socials]({epieos_url})\n"
+                        f"├─ 🗺️ [Google Maps Contributions](https://www.google.com/search?q={maps_dork})\n"
+                        f"├─ 📄 [Exposed Google Docs](https://www.google.com/search?q={docs_dork})\n"
+                        f"└─ 🔓 [Scan Public Pastebin Leaks](https://www.google.com/search?q={paste_dork})\n"
+                        "━━━━━━━━━━━━━━━━━━━━━━\n"
+                        "⚡ _Source: F0RB1D Cyber Matrix_"
                     )
 
                     # Send output (disable_web_page_preview keeps UI sleek)
@@ -293,11 +312,11 @@ def webhook():
                         "disable_web_page_preview": True
                     })
 
-                except Exception:
+                except Exception as e:
                     if msg_id:
                         requests.post(f"{TELEGRAM_API}/deleteMessage", json={"chat_id": chat_id, "message_id": msg_id})
                     
-                    err_msg = "⚠️ **SYSTEM ERROR:** Failed to execute Google OSINT payload."
+                    err_msg = f"⚠️ **SYSTEM ERROR:** Failed to execute OSINT payload.\n`{str(e)}`"
                     requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": err_msg, "parse_mode": "Markdown"})
             else:
                 payload = {
@@ -305,7 +324,7 @@ def webhook():
                     "text": (
                         "📧 **F0RB1D // EMAIL SEARCH**\n"
                         "━━━━━━━━━━━━━━━━━━━━━━\n"
-                        "⚠️ `ERROR: TARGET EMAIL MISSING`\n\n"
+                        "⚠️ `ERROR: INVALID TARGET EMAIL`\n\n"
                         "Syntax required:\n"
                         "└─ `/email [target email]`\n\n"
                         "_Example: `/email target@gmail.com`_"
