@@ -70,7 +70,7 @@ def webhook():
             if prompt:
                 # 1. Pick a random elite loading message (Zero extra bandwidth)
                 loading_phrases = [
-                    "⚡ `[F0RB1D API] Interfacing with Pollinations...`",
+                    "⚡ `[F0RB1D API] Interfacing with Forbid API...`",
                     "🎨 `[VISUAL ENGINE] Compiling neural pixels...`",
                     "🌐 `[MAFIA GANG NET] Establishing image uplink...`",
                     "⚙️ `[F0RB1D CORE] Generating visual matrix...`"
