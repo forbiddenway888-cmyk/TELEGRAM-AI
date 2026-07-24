@@ -144,7 +144,7 @@ def webhook():
                         "🎨 **F0RB1D // VISUAL ENGINE**\n"
                         "━━━━━━━━━━━━━━━━━━━━━━\n"
                         "Syntax required:\n"
-                        "└─ `/image [your visual idea]`\n\n"
+                        "└─ `/image [Your Prompt]`\n\n"
                         "_Example: `/image cyber samurai in neon rain`_"
                     ),
                     "parse_mode": "Markdown"
