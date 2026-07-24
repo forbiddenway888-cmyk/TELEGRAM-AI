@@ -11,39 +11,11 @@ TOKEN = os.getenv("BOT_TOKEN")
 TELEGRAM_API = f"https://api.telegram.org/bot{TOKEN}"
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 USER_MEMORY = {}
-USER_STATE = {}  # Tracks if a user is waiting to send an image prompt
+
 
 @app.route("/", methods=["GET"])
 def index():
     return "⚡ F0RB1D PROTOCOL ONLINE", 200
-
-def generate_image(chat_id, prompt):
-    if chat_id not in USER_CREDITS:
-        USER_CREDITS[chat_id] = STARTING_DIAMONDS
-        
-    if USER_CREDITS[chat_id] <= 0:
-        payload = {"chat_id": chat_id, "text": "🚫 **ACCESS DENIED**\n\nYou have 0 💎 left.", "parse_mode": "Markdown"}
-        requests.post(f"{TELEGRAM_API}/sendMessage", json=payload)
-        return
-
-    # Deduct 1 Diamond
-    USER_CREDITS[chat_id] -= 1
-    current_balance = USER_CREDITS[chat_id]
-    
-    # Notify user rendering started
-    load_payload = {"chat_id": chat_id, "text": "🎨 `RENDERING PIXELS...`", "parse_mode": "Markdown"}
-    requests.post(f"{TELEGRAM_API}/sendMessage", json=load_payload)
-    
-    safe_prompt = urllib.parse.quote(prompt)
-    image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?nologo=true"
-    
-    payload = {
-        "chat_id": chat_id,
-        "photo": image_url,
-        "caption": f"⚡ **Generated:** {prompt}\n💎 **Diamonds remaining:** {current_balance}",
-        "parse_mode": "Markdown"
-    }
-    requests.post(f"{TELEGRAM_API}/sendPhoto", json=payload)
 
 @app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
@@ -90,18 +62,33 @@ def webhook():
             )
             requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": intro_msg, "parse_mode": "Markdown"})
 
-        # IMAGE GENERATOR (Zero Bandwidth)
-        elif text.startswith("/image"):
-            prompt = text.replace("/image", "").strip() or "cyberpunk city"
-            safe_prompt = urllib.parse.quote(prompt)
-            image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?nologo=true"
-            payload = {
-                "chat_id": chat_id,
-                "photo": image_url,
-                "caption": f"⚡ Generated: {prompt}"
-            }
-            requests.post(f"{TELEGRAM_API}/sendPhoto", json=payload)
-
+        # 3. IMAGE GENERATOR (Classic & Free)
+        elif text.startswith("/image") or text == "🎨 Image":
+            prompt = text.replace("/image", "").strip() if text.startswith("/image") else ""
+            
+            if prompt:
+                # 1. Send loading message
+                load_payload = {"chat_id": chat_id, "text": "🎨 `RENDERING PIXELS...`", "parse_mode": "Markdown"}
+                loading_msg = requests.post(f"{TELEGRAM_API}/sendMessage", json=load_payload).json()
+                msg_id = loading_msg["result"]["message_id"]
+                
+                # 2. Fetch image
+                safe_prompt = urllib.parse.quote(prompt)
+                image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?nologo=true"
+                
+                # 3. Delete loading text, send photo
+                requests.post(f"{TELEGRAM_API}/deleteMessage", json={"chat_id": chat_id, "message_id": msg_id})
+                
+                payload = {
+                    "chat_id": chat_id,
+                    "photo": image_url,
+                    "caption": f"⚡ Generated: {prompt}"
+                }
+                requests.post(f"{TELEGRAM_API}/sendPhoto", json=payload)
+            else:
+                # Prompt was empty, remind them how to use it
+                payload = {"chat_id": chat_id, "text": "To generate an image, type `/image [your idea]`"}
+                requests.post(f"{TELEGRAM_API}/sendMessage", json=payload)
         # 4. SYSTEM OPS
         elif text.startswith("/ops") or text == "📡 Ops":
             payload = {"chat_id": chat_id, "text": "🟢 SYSTEM NOMINAL. Bandwidth usage: Ultra-Low."}
