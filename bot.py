@@ -32,7 +32,7 @@ def webhook():
                 # Call Groq API
                 groq_url = "https://api.groq.com/openai/v1/chat/completions"
                 headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
-                data = {"model": "llama3-8b-8192", "messages": [{"role": "user", "content": user_prompt}]}
+                data = {"model": "llama-3.1-8b-instant", "messages": [{"role": "user", "content": user_prompt}]}
                 
                 try:
                     res = requests.post(groq_url, headers=headers, json=data)
