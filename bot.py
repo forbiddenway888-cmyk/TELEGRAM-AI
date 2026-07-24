@@ -35,36 +35,40 @@ def webhook():
         chat_id = update["message"]["chat"]["id"]
         text = update["message"]["text"]
 
-        # START / HELP
+        # START COMMAND - Sends the Keyboard
         if text.startswith("/start"):
+            # This builds the buttons exactly like your picture (2 on top, 2 on bottom)
+            keyboard_layout = {
+                "keyboard": [
+                    [{"text": "🤖 AI"}, {"text": "🎨 Image"}],
+                    [{"text": "📡 Ops"}, {"text": "⚙️ Settings"}]
+                ],
+                "resize_keyboard": True, # Makes it fit the screen perfectly
+                "is_persistent": True    # Keeps the menu open at the bottom
+            }
+            
             payload = {
                 "chat_id": chat_id,
-                "text": "⚡ **FORB1D PROTOCOL ONLINE**\n\nUse the `/` key or menu button to browse commands."
+                "text": "⚡ **F0RB1D // PROTOCOL ONLINE**\n\nSelect a system protocol below:",
+                "reply_markup": keyboard_layout
             }
             requests.post(f"{TELEGRAM_API}/sendMessage", json=payload)
 
-        # AI COMMAND (Simple Echo/Text Placeholder)
-        elif text.startswith("/ai"):
-            prompt = text.replace("/ai", "").strip()
-            reply = f"🤖 **AI Response:** Processing prompt: *{prompt}*" if prompt else "Please provide a prompt after `/ai`."
-            payload = {"chat_id": chat_id, "text": reply}
+        # HANDLE BUTTON CLICKS
+        elif text == "🤖 AI":
+            payload = {"chat_id": chat_id, "text": "Send `/ai [your question]` to use the AI."}
             requests.post(f"{TELEGRAM_API}/sendMessage", json=payload)
 
-        # IMAGE GENERATOR (Zero Bandwidth)
-        elif text.startswith("/image"):
-            prompt = text.replace("/image", "").strip() or "cyberpunk city"
-            safe_prompt = urllib.parse.quote(prompt)
-            image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?nologo=true"
-            payload = {
-                "chat_id": chat_id,
-                "photo": image_url,
-                "caption": f"⚡ Generated: {prompt}"
-            }
-            requests.post(f"{TELEGRAM_API}/sendPhoto", json=payload)
+        elif text == "🎨 Image":
+            payload = {"chat_id": chat_id, "text": "Send `/image [prompt]` to generate a picture."}
+            requests.post(f"{TELEGRAM_API}/sendMessage", json=payload)
 
-        # SYSTEM OPS
-        elif text.startswith("/ops"):
+        elif text == "📡 Ops":
             payload = {"chat_id": chat_id, "text": "🟢 SYSTEM NOMINAL. Bandwidth usage: Ultra-Low."}
+            requests.post(f"{TELEGRAM_API}/sendMessage", json=payload)
+            
+        elif text == "⚙️ Settings":
+            payload = {"chat_id": chat_id, "text": "⚙️ Settings module is currently locked."}
             requests.post(f"{TELEGRAM_API}/sendMessage", json=payload)
 
     return "OK", 200
