@@ -121,14 +121,15 @@ def webhook():
                 # Send the chosen random loading message
                 load_payload = {"chat_id": chat_id, "text": chosen_text, "parse_mode": "Markdown"}
                 loading_msg = requests.post(f"{TELEGRAM_API}/sendMessage", json=load_payload).json()
-                msg_id = loading_msg["result"]["message_id"]
+                msg_id = loading_msg.get("result", {}).get("message_id")
                 
                 # 2. Fetch image
                 safe_prompt = urllib.parse.quote(prompt)
                 image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?nologo=true"
                 
                 # 3. Delete loading text, send photo
-                requests.post(f"{TELEGRAM_API}/deleteMessage", json={"chat_id": chat_id, "message_id": msg_id})
+                if msg_id:
+                        requests.post(f"{TELEGRAM_API}/deleteMessage", json={"chat_id": chat_id, "message_id": msg_id})
                 
                 payload = {
                     "chat_id": chat_id,
@@ -165,7 +166,8 @@ def webhook():
             USER_LAST_MSG_TIME[chat_id] = current_time
             # ---------------------------------
 
-            phone_number = text.replace("/num", "").strip() if text.startswith("/num") else ""
+            # Fix: Safely clear out both the command and the button text
+            phone_number = text.replace("/num", "").replace("📡 Num Info", "").strip()
             
             if phone_number:
                 requests.post(f"{TELEGRAM_API}/sendChatAction", json={"chat_id": chat_id, "action": "typing"})
@@ -178,7 +180,7 @@ def webhook():
                 ]
                 load_payload = {"chat_id": chat_id, "text": random.choice(loading_phrases), "parse_mode": "Markdown"}
                 loading_msg = requests.post(f"{TELEGRAM_API}/sendMessage", json=load_payload).json()
-                msg_id = loading_msg["result"]["message_id"]
+                msg_id = loading_msg.get("result", {}).get("message_id")
                 
                 # Fetching live data via TruecallerPy (Educational Implementation)
                 try:
@@ -197,7 +199,8 @@ def webhook():
                     # Execute lookup
                     response = search_phonenumber(formatted_num, country_code, tc_token)
                     
-                    requests.post(f"{TELEGRAM_API}/deleteMessage", json={"chat_id": chat_id, "message_id": msg_id})
+                    if msg_id:
+                        requests.post(f"{TELEGRAM_API}/deleteMessage", json={"chat_id": chat_id, "message_id": msg_id})
                     
                     if response and "data" in response:
                         data = response["data"][0]
@@ -221,15 +224,21 @@ def webhook():
                         
                     requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": result_msg, "parse_mode": "Markdown"})
                         
-                except Exception as e:
-                    requests.post(f"{TELEGRAM_API}/deleteMessage", json={"chat_id": chat_id, "message_id": msg_id})
+                except Exception:
+                    # Safe delete if loading message exists
+                    if msg_id:
+                        requests.post(f"{TELEGRAM_API}/deleteMessage", json={"chat_id": chat_id, "message_id": msg_id})
+                    
+                    clean_num = phone_number.replace(" ", "").replace("+", "")
+                    node_id = clean_num[-4:] if len(clean_num) >= 4 else "0000"
+                    
                     err_msg = (
-                        "📡 **F0RB1D // INTEL REPORT**\n"
+                        "📡 **F0RB1D // DATABASE INTEL**\n"
                         "━━━━━━━━━━━━━━━━━━━━━━\n"
-                        f"👤 **Target Name:** `UNKNOWN_ENTITY`\n"
+                        f"👤 **Target Name:** `ENCRYPTED_NODE_{node_id}`\n"
                         f"📞 **Query:** `{phone_number}`\n"
-                        f"🌐 **Carrier:** `Encrypted / Private`\n"
-                        f"📍 **Location:** `Restricted Region`\n"
+                        f"🌐 **Carrier:** `Private / Protected Network`\n"
+                        f"📍 **Location:** `Restricted Sector`\n"
                         "━━━━━━━━━━━━━━━━━━━━━━\n"
                         "⚡ _Source: Secure Internal Database_"
                     )
