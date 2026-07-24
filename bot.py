@@ -137,8 +137,19 @@ def webhook():
                 }
                 requests.post(f"{TELEGRAM_API}/sendPhoto", json=payload)
             else:
-                # Prompt was empty, remind them how to use it
-                payload = {"chat_id": chat_id, "text": "To generate an image, type /image [your idea]"}
+                # Upgraded cyber aesthetic for empty prompt warning
+                payload = {
+                    "chat_id": chat_id,
+                    "text": (
+                        "🎨 **F0RB1D // VISUAL ENGINE**\n"
+                        "━━━━━━━━━━━━━━━━━━━━━━\n"
+                        "⚠️ `ERROR: EMPTY PROMPT DETECTED`\n\n"
+                        "Syntax required:\n"
+                        "└─ `/image [your visual idea]`\n\n"
+                        "_Example: `/image cyber samurai in neon rain`_"
+                    ),
+                    "parse_mode": "Markdown"
+                }
                 requests.post(f"{TELEGRAM_API}/sendMessage", json=payload)
         # 4. SYSTEM OPS
         elif text.startswith("/ops") or text == "📡 Ops":
