@@ -143,7 +143,6 @@ def webhook():
                     "text": (
                         "🎨 **F0RB1D // VISUAL ENGINE**\n"
                         "━━━━━━━━━━━━━━━━━━━━━━\n"
-                        "⚠️ `ERROR: EMPTY PROMPT DETECTED`\n\n"
                         "Syntax required:\n"
                         "└─ `/image [your visual idea]`\n\n"
                         "_Example: `/image cyber samurai in neon rain`_"
