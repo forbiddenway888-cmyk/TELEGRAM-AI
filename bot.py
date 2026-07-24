@@ -220,7 +220,7 @@ def webhook():
                 requests.post(f"{TELEGRAM_API}/sendMessage", json=payload)
 
         # --------------------------------------------------
-        # 5. ULTRA-DEEP EMAIL OSINT ENGINE (Public Data + Dorks)
+        # 5. F0RB1D // DEEP EMAIL RECON & LEAK MATRIX
         # --------------------------------------------------
         elif text.startswith("/email"):
             current_time = time.time()
@@ -237,74 +237,98 @@ def webhook():
             target_email = text.replace("/email", "").strip().lower()
             
             import re
-            # Validate email format
             if target_email and re.match(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$", target_email):
                 requests.post(f"{TELEGRAM_API}/sendChatAction", json={"chat_id": chat_id, "action": "typing"})
                 
-                # Send fast status feedback
-                load_payload = {"chat_id": chat_id, "text": "📡 `[F0RB1D OSINT] Extracting public network data...`", "parse_mode": "Markdown"}
+                # Send animated loading feedback
+                load_payload = {
+                    "chat_id": chat_id, 
+                    "text": "⚡ `[F0RB1D DEEP SEARCH] Querying Public Breach Databases & Account Matrix...`", 
+                    "parse_mode": "Markdown"
+                }
                 loading_msg = requests.post(f"{TELEGRAM_API}/sendMessage", json=load_payload).json()
                 msg_id = loading_msg.get("result", {}).get("message_id")
 
                 try:
-                    import urllib.parse
-                    
                     username = target_email.split("@")[0]
                     domain = target_email.split("@")[1]
 
-                    # 1. LIVE PUBLIC API CHECK (emailrep.io - free, no key needed)
-                    reputation = "Unknown"
-                    suspicious = "Unknown"
-                    blacklisted = "Unknown"
-                    data_breaches = "Unknown"
-                    
+                    # --- MODULE 1: EmailRep Public Security Matrix ---
+                    rep_data = {}
                     try:
-                        headers = {"User-Agent": "F0RB1D-OSINT-Protocol"}
-                        rep_res = requests.get(f"https://emailrep.io/{target_email}", headers=headers, timeout=5)
-                        if rep_res.status_code == 200:
-                            data = rep_res.json()
-                            reputation = data.get("reputation", "Unknown").capitalize()
-                            suspicious = "Yes ⚠️" if data.get("suspicious") else "No ✅"
-                            blacklisted = "Yes 🚫" if data.get("details", {}).get("blacklisted") else "No ✅"
-                            data_breaches = "Compromised 🚨" if data.get("details", {}).get("credentials_leaked") else "Clean ✅"
-                    except:
-                        # Fallback if API is unreachable
+                        headers = {"User-Agent": "FORBID-OSINT-ENGINE/2.0"}
+                        res = requests.get(f"https://emailrep.io/{target_email}", headers=headers, timeout=5)
+                        if res.status_code == 200:
+                            rep_data = res.json()
+                    except Exception:
                         pass
 
-                    # 2. Automated Deep Links (Dorks & Epieos)
+                    reputation = rep_data.get("reputation", "Unknown").capitalize()
+                    suspicious = "Yes ⚠️" if rep_data.get("suspicious") else "No ✅"
+                    credentials_leaked = rep_data.get("details", {}).get("credentials_leaked", False)
+                    spam_risk = "High 🚨" if rep_data.get("details", {}).get("spam", False) else "Low ✅"
+                    domain_exists = "Active Domain ✅" if rep_data.get("details", {}).get("valid_mx", False) else "Invalid Domain ❌"
+                    
+                    # Extract associated profiles found in public headers
+                    profiles_found = rep_data.get("details", {}).get("profiles", [])
+                    linked_apps = ", ".join([p.capitalize() for p in profiles_found]) if profiles_found else "None Detected"
+
+                    # --- MODULE 2: Public Data Breach Aggregator (LeakCheck Public Endpoint) ---
+                    breach_count = 0
+                    breach_sources = []
+                    
+                    try:
+                        leak_res = requests.get(f"https://leakcheck.io/api/public?check={target_email}", timeout=5)
+                        if leak_res.status_code == 200:
+                            leak_json = leak_res.json()
+                            if leak_json.get("success"):
+                                breach_count = leak_json.get("found", 0)
+                                breach_sources = [s.get("name", "Unknown Leak") for s in leak_json.get("sources", [])]
+                    except Exception:
+                        pass
+
+                    breach_status = f"CRITICAL ({breach_count} Public Breaches)" if breach_count > 0 else "CLEAN (0 Breaches Found)"
+                    sources_str = "\n├─ 📂 ".join(breach_sources[:5]) if breach_sources else "No public breach logs indexed"
+
+                    # --- MODULE 3: Direct Deep Recon Links ---
                     epieos_url = f"https://epieos.com/?q={target_email}&t=email"
-                    maps_dork = urllib.parse.quote(f'site:google.com/maps/contrib/ "{target_email}"')
-                    docs_dork = urllib.parse.quote(f'site:drive.google.com OR site:docs.google.com "{target_email}"')
-                    paste_dork = urllib.parse.quote(f'"{target_email}" site:pastebin.com')
+                    google_dork = urllib.parse.quote(f'"{target_email}" filetype:txt OR filetype:log OR filetype:csv')
+                    paste_dork = urllib.parse.quote(f'"{target_email}" site:pastebin.com OR site:ghostbin.com')
 
                     # Clean up loading indicator
                     if msg_id:
                         requests.post(f"{TELEGRAM_API}/deleteMessage", json={"chat_id": chat_id, "message_id": msg_id})
 
-                    # 3. Format the F0RB1D OSINT Report
+                    # --- MODULE 4: Format Branded Output ---
                     result_msg = (
-                        "📡 **F0RB1D // EMAIL OSINT REPORT**\n"
+                        "⚡ **F0RB1D // MAILACCESS RECON REPORT**\n"
                         "━━━━━━━━━━━━━━━━━━━━━━\n"
                         f"🎯 **Target Node:** `{target_email}`\n"
-                        f"👤 **Extracted Handle:** `{username}`\n"
-                        f"🌐 **Domain Host:** `{domain}`\n"
+                        f"👤 **Parsed Handle:** `{username}`\n"
+                        f"🌐 **Mail Host:** `{domain}` (`{domain_exists}`)\n"
                         "━━━━━━━━━━━━━━━━━━━━━━\n"
-                        "📊 **THREAT & BREACH STATUS:**\n"
-                        f"├─ **Reputation:** `{reputation}`\n"
-                        f"├─ **Suspicious:** `{suspicious}`\n"
-                        f"├─ **Blacklisted:** `{blacklisted}`\n"
-                        f"└─ **Data Breaches:** `{data_breaches}`\n"
+                        "📊 **THREAT & SECURITY ASSESSMENT:**\n"
+                        f"├─ **Trust Score:** `{reputation}`\n"
+                        f"├─ **Suspicious Vector:** `{suspicious}`\n"
+                        f"├─ **Spam/Botnet Risk:** `{spam_risk}`\n"
+                        f"└─ **Credentials Exposed:** `{'YES 🚨' if credentials_leaked else 'NO ✅'}`\n"
                         "━━━━━━━━━━━━━━━━━━━━━━\n"
-                        "📍 **DEEP FOOTPRINT LINKS:**\n"
-                        f"├─ 👤 [Pull Real Name & Socials]({epieos_url})\n"
-                        f"├─ 🗺️ [Google Maps Contributions](https://www.google.com/search?q={maps_dork})\n"
-                        f"├─ 📄 [Exposed Google Docs](https://www.google.com/search?q={docs_dork})\n"
-                        f"└─ 🔓 [Scan Public Pastebin Leaks](https://www.google.com/search?q={paste_dork})\n"
+                        "🔓 **PUBLIC BREACH FOOTPRINT:**\n"
+                        f"├─ **Leak Status:** `{breach_status}`\n"
+                        f"└─ **Known Leak Sources:**\n"
+                        f"├─ 📂 {sources_str}\n"
                         "━━━━━━━━━━━━━━━━━━━━━━\n"
-                        "⚡ _Source: F0RB1D Cyber Matrix_"
+                        "📱 **REGISTERED PLATFORMS / ACCOUNTS:**\n"
+                        f"└─ `{linked_apps}`\n"
+                        "━━━━━━━━━━━━━━━━━━━━━━\n"
+                        "📍 **DEEP INTEL PICTORIAL PULLS:**\n"
+                        f"├─ 👤 [Pull Profile Photos & Real Name]({epieos_url})\n"
+                        f"├─ 📄 [Search Raw Combo/Log Dorks](https://www.google.com/search?q={google_dork})\n"
+                        f"└─ 🔓 [Scan Public Paste Dorks](https://www.google.com/search?q={paste_dork})\n"
+                        "━━━━━━━━━━━━━━━━━━━━━━\n"
+                        "⚡ _Generated by F0RB1D Intelligence Matrix_"
                     )
 
-                    # Send output (disable_web_page_preview keeps UI sleek)
                     requests.post(f"{TELEGRAM_API}/sendMessage", json={
                         "chat_id": chat_id, 
                         "text": result_msg, 
@@ -316,18 +340,18 @@ def webhook():
                     if msg_id:
                         requests.post(f"{TELEGRAM_API}/deleteMessage", json={"chat_id": chat_id, "message_id": msg_id})
                     
-                    err_msg = f"⚠️ **SYSTEM ERROR:** Failed to execute OSINT payload.\n`{str(e)}`"
+                    err_msg = f"⚠️ **F0RB1D SYSTEM ERROR:** Failed to execute MailAccess payload.\n`{str(e)}`"
                     requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": err_msg, "parse_mode": "Markdown"})
             else:
                 payload = {
                     "chat_id": chat_id,
                     "text": (
-                        "📧 **F0RB1D // EMAIL SEARCH**\n"
+                        "📧 **F0RB1D // MAILACCESS RECON**\n"
                         "━━━━━━━━━━━━━━━━━━━━━━\n"
-                        "⚠️ `ERROR: INVALID TARGET EMAIL`\n\n"
+                        "⚠️ `ERROR: INVALID OR MISSING TARGET EMAIL`\n\n"
                         "Syntax required:\n"
                         "└─ `/email [target email]`\n\n"
-                        "_Example: `/email target@gmail.com`_"
+                        "_Example: `/email victim@gmail.com`_"
                     ),
                     "parse_mode": "Markdown"
                 }
