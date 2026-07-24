@@ -36,7 +36,7 @@ def webhook():
             keyboard_layout = {
                 "keyboard": [
                     [{"text": "🤖 AI"}, {"text": "🎨 Image"}],
-                    [{"text": "📡 Ops"}, {"text": "⚙️ Settings"}]
+                    [{"text": "📡 Num Info"}, {"text": "⚙️ Settings"}]
                 ],
                 "resize_keyboard": True
             }
