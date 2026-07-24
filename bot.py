@@ -49,13 +49,15 @@ def webhook():
         # 2. TRIGGER THE AI PROMPT
         elif text.startswith("/ai") or text == "🤖 AI":
             intro_msg = (
-                "⚡ **F0RB1D // NEURAL LINK ESTABLISHED**\n\n"
-                "I am online and listening. You don't need to use commands to talk to me—just type your message.\n\n"
-                "**Available Protocols:**\n"
-                "👾 `Write & Debug Complex Code`\n"
-                "🧠 `Deep Conversational Logic`\n"
-                "🌐 `System Analysis & Strategy`\n\n"
-                "_Initiate prompt sequence below..._"
+                "┌── ⚡ **F0RB1D // NEURAL LINK** ──┐\n"
+                "│  **Status:** 🟢 Active\n"
+                "│  **Security:** 🔒 Enforced\n"
+                "└──────────────────────────┘\n\n"
+                "Direct comms open. Type your message below—no commands needed.\n\n"
+                "▸ `Code & Architecture`\n"
+                "▸ `Strategy & Deep Logic`\n"
+                "▸ `System Operations`\n\n"
+                "└─ _Awaiting input sequence..._"
             )
             requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": intro_msg, "parse_mode": "Markdown"})
 
