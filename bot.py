@@ -195,7 +195,7 @@ def webhook():
                             f"📍 **Region:** `{num_location}`\n"
                             f"⏰ **Timezone:** `{time_zones}`\n"
                             "━━━━━━━━━━━━━━━━━━━━━━\n"
-                            "⚡ _Source: Local System Decoder_"
+                            "⚡ _Source: Forbid Ai Database_"
                         )
                     else:
                         result_msg = f"📡 **F0RB1D // INTEL REPORT**\n━━━━━━━━━━━━━━━━━━━━━━\n❌ Target `{phone_number}` is not a valid international format."
@@ -211,10 +211,104 @@ def webhook():
                     "text": (
                         "📡 **F0RB1D // DATABASE SEARCH**\n"
                         "━━━━━━━━━━━━━━━━━━━━━━\n"
-                        "⚠️ `ERROR: TARGET NUMBER MISSING`\n\n"
                         "Syntax required:\n"
                         "└─ `/num [phone number]`\n\n"
                         "_Example: `/num +919876543210`_"
+                    ),
+                    "parse_mode": "Markdown"
+                }
+                requests.post(f"{TELEGRAM_API}/sendMessage", json=payload)
+
+        # --------------------------------------------------
+        # 5. ULTRA-DEEP GOOGLE OSINT ENGINE (GHunt/Epieos Method)
+        # --------------------------------------------------
+        elif text.startswith("/email"):
+            current_time = time.time()
+            last_time = USER_LAST_MSG_TIME.get(chat_id, 0)
+            
+            if current_time - last_time < 3:
+                remaining = round(3 - (current_time - last_time), 1)
+                cooldown_msg = f"⏳ **SYSTEM OVERLOAD**\nPlease wait `{remaining}s` before next query."
+                requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": cooldown_msg, "parse_mode": "Markdown"})
+                return "OK", 200
+            
+            USER_LAST_MSG_TIME[chat_id] = current_time
+
+            target_email = text.replace("/email", "").strip().lower()
+            
+            if target_email and "@" in target_email:
+                requests.post(f"{TELEGRAM_API}/sendChatAction", json={"chat_id": chat_id, "action": "typing"})
+                
+                # Send fast status feedback
+                load_payload = {"chat_id": chat_id, "text": "📡 `[F0RB1D OSINT] Intercepting Google Account & Maps Footprint...`", "parse_mode": "Markdown"}
+                loading_msg = requests.post(f"{TELEGRAM_API}/sendMessage", json=load_payload).json()
+                msg_id = loading_msg.get("result", {}).get("message_id")
+
+                try:
+                    import urllib.parse
+                    import re
+
+                    username = target_email.split("@")[0]
+                    domain = target_email.split("@")[1]
+
+                    # 1. Direct Epieos Reverse Lookup Link (Extracts Name, Maps Reviews, Photos)
+                    epieos_url = f"https://epieos.com/?q={target_email}&t=email"
+                    
+                    # 2. Automated Google Dorking Queries
+                    maps_dork = urllib.parse.quote(f'site:google.com/maps/contrib/ "{target_email}" OR "{username}"')
+                    google_maps_url = f"https://www.google.com/search?q={maps_dork}"
+                    
+                    docs_dork = urllib.parse.quote(f'site:drive.google.com OR site:docs.google.com "{target_email}"')
+                    google_docs_url = f"https://www.google.com/search?q={docs_dork}"
+
+                    leak_dork = urllib.parse.quote(f'"{target_email}" filetype:txt OR filetype:csv OR filetype:pdf')
+                    leak_url = f"https://www.google.com/search?q={leak_dork}"
+
+                    # Clean up loading indicator
+                    if msg_id:
+                        requests.post(f"{TELEGRAM_API}/deleteMessage", json={"chat_id": chat_id, "message_id": msg_id})
+
+                    # 3. Format the GHunt-Style Deep Intel Report
+                    result_msg = (
+                        "📡 **F0RB1D // GOOGLE ACCOUNT DEEP INTEL**\n"
+                        "━━━━━━━━━━━━━━━━━━━━━━\n"
+                        f"🎯 **Target Node:** `{target_email}`\n"
+                        f"👤 **Extracted Handle:** `{username}`\n"
+                        f"🌐 **Domain Host:** `{domain}`\n"
+                        "━━━━━━━━━━━━━━━━━━━━━━\n"
+                        "📍 **GOOGLE MAPS & GOOGLE ACCOUNT FOOTPRINT:**\n"
+                        f"├─ 👤 [Pull Real Name & Maps Reviews]({epieos_url})\n"
+                        f"├─ 🗺️ [Search Public Maps Contributions]({google_maps_url})\n"
+                        f"├─ 📄 [Search Exposed Google Drive/Docs]({google_docs_url})\n"
+                        f"└─ 🔓 [Scan Public Paste/Data Leaks]({leak_url})\n"
+                        "━━━━━━━━━━━━━━━━━━━━━━\n"
+                        "⚡ _Source: GHunt & Epieos Recon Matrix_"
+                    )
+
+                    # Send output (disable_web_page_preview keeps UI sleek)
+                    requests.post(f"{TELEGRAM_API}/sendMessage", json={
+                        "chat_id": chat_id, 
+                        "text": result_msg, 
+                        "parse_mode": "Markdown",
+                        "disable_web_page_preview": True
+                    })
+
+                except Exception:
+                    if msg_id:
+                        requests.post(f"{TELEGRAM_API}/deleteMessage", json={"chat_id": chat_id, "message_id": msg_id})
+                    
+                    err_msg = "⚠️ **SYSTEM ERROR:** Failed to execute Google OSINT payload."
+                    requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": err_msg, "parse_mode": "Markdown"})
+            else:
+                payload = {
+                    "chat_id": chat_id,
+                    "text": (
+                        "📧 **F0RB1D // EMAIL SEARCH**\n"
+                        "━━━━━━━━━━━━━━━━━━━━━━\n"
+                        "⚠️ `ERROR: TARGET EMAIL MISSING`\n\n"
+                        "Syntax required:\n"
+                        "└─ `/email [target email]`\n\n"
+                        "_Example: `/email target@gmail.com`_"
                     ),
                     "parse_mode": "Markdown"
                 }
