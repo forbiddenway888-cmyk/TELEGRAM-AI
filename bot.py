@@ -7,6 +7,7 @@ app = Flask(__name__)
 
 TOKEN = os.getenv("BOT_TOKEN")
 TELEGRAM_API = f"https://api.telegram.org/bot{TOKEN}"
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 @app.route("/", methods=["GET"])
 def index():
@@ -19,6 +20,29 @@ def webhook():
     if "message" in update and "text" in update["message"]:
         chat_id = update["message"]["chat"]["id"]
         text = update["message"]["text"]
+
+        # --- GROQ AI ENGINE ---
+        if "reply_to_message" in update["message"]:
+            if update["message"]["reply_to_message"]["text"] == "🤖 What do you want to ask the AI?":
+                user_prompt = text
+                
+                # Send "typing..." animation
+                requests.post(f"{TELEGRAM_API}/sendChatAction", json={"chat_id": chat_id, "action": "typing"})
+                
+                # Call Groq API
+                groq_url = "https://api.groq.com/openai/v1/chat/completions"
+                headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
+                data = {"model": "llama3-8b-8192", "messages": [{"role": "user", "content": user_prompt}]}
+                
+                try:
+                    groq_res = requests.post(groq_url, headers=headers, json=data).json()
+                    ai_reply = groq_res["choices"][0]["message"]["content"]
+                except Exception as e:
+                    ai_reply = "⚠️ Error: Could not connect to Groq."
+                    
+                requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": ai_reply})
+                return "OK", 200
+        # ----------------------
 
         # 1. START COMMAND & KEYBOARD MENU
         if text.startswith("/start"):
@@ -39,16 +63,13 @@ def webhook():
             }
             requests.post(f"{TELEGRAM_API}/sendMessage", json=payload)
 
-        # 2. AI (Works for both button click AND /ai command)
+        # 2. TRIGGER THE AI PROMPT
         elif text.startswith("/ai") or text == "🤖 AI":
-            prompt = text.replace("/ai", "").strip() if text.startswith("/ai") else ""
-            
-            if prompt:
-                reply = f"🤖 **AI Response:** Processing prompt: *{prompt}*"
-            else:
-                reply = "To use the AI, type `/ai [your question]`"
-                
-            payload = {"chat_id": chat_id, "text": reply, "parse_mode": "Markdown"}
+            payload = {
+                "chat_id": chat_id,
+                "text": "🤖 What do you want to ask the AI?",
+                "reply_markup": {"force_reply": True} 
+            }
             requests.post(f"{TELEGRAM_API}/sendMessage", json=payload)
 
         # 3. IMAGE GENERATOR (Works for both button click AND /image command)
