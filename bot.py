@@ -12,6 +12,7 @@ TOKEN = os.getenv("BOT_TOKEN")
 TELEGRAM_API = f"https://api.telegram.org/bot{TOKEN}"
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 USER_MEMORY = {}
+USER_LAST_MSG_TIME = {}  # Tracks timestamps to prevent spam
 
 
 @app.route("/", methods=["GET"])
@@ -130,7 +131,24 @@ def webhook():
 
         # 6. AUTO-AI CATCH-ALL & MEMORY
         else:
+            # --- ANTI-SPAM COOLDOWN ---
+            current_time = time.time()
+            last_time = USER_LAST_MSG_TIME.get(chat_id, 0)
+            
+            if current_time - last_time < 3:
+                # If they message faster than 3 seconds, warn them and stop the code
+                cooldown_msg = "⏳ **SYSTEM COOLDOWN**\nPlease wait 3 seconds before sending another message."
+                requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": cooldown_msg, "parse_mode": "Markdown"})
+                return "OK", 200  # Exits the function immediately, protecting the Groq API
+            
+            # If they pass the check, update their timestamp for next time
+            USER_LAST_MSG_TIME[chat_id] = current_time
+            # --------------------------
+
             requests.post(f"{TELEGRAM_API}/sendChatAction", json={"chat_id": chat_id, "action": "typing"})
+            
+            # Create memory for this user if it doesn't exist
+            # ... (the rest of your USER_MEMORY and Groq API code stays exactly the same below this)
             
             # Create memory for this user if it doesn't exist
             if chat_id not in USER_MEMORY:
