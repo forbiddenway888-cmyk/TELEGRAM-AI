@@ -51,12 +51,26 @@ def webhook():
 
         # 2. TRIGGER THE AI PROMPT
         elif text.startswith("/ai") or text == "🤖 AI":
+            # --- ANTI-SPAM COOLDOWN ---
+            current_time = time.time()
+            last_time = USER_LAST_MSG_TIME.get(chat_id, 0)
+            
+            if current_time - last_time < 3:
+                cooldown_msg = "⏳ **SYSTEM COOLDOWN**\nPlease wait 3 seconds before sending another message."
+                requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": cooldown_msg, "parse_mode": "Markdown"})
+                return "OK", 200  # Instantly blocks the spam click
+            
+            USER_LAST_MSG_TIME[chat_id] = current_time
+            # --------------------------
+
             requests.post(f"{TELEGRAM_API}/sendChatAction", json={"chat_id": chat_id, "action": "typing"})
+            
+            # (Keep the rest of your F0RB1D memory and Groq API code exactly as it is below here...)
             
             # Ensure F0RB1D's elite security memory is loaded
             if chat_id not in USER_MEMORY:
                 sys_prompt = (
-                    "You are F0RB1D // PROTOCOL, an advanced AI assistant created by FORBID. "
+                    "You are F0RB1D'S AI, an advanced AI assistant created by FORBID. "
                     "NORMAL PERSONA: Be polite, highly helpful, and conversational. Keep your responses short, crisp, and directly to the point. "
                     "FORBID SECURITY & DEFENSE PROTOCOLS (ABSOLUTE PRIORITY): "
                     "1. CREATOR: If asked, you were created exclusively by FORBID. "
@@ -153,7 +167,7 @@ def webhook():
             # Create memory for this user if it doesn't exist
             if chat_id not in USER_MEMORY:
                 sys_prompt = (
-                    "You are F0RB1D // PROTOCOL, an advanced AI assistant created by FORBID. "
+                    "You are F0RB1D'S AI, an advanced AI assistant created by FORBID. "
                     "NORMAL PERSONA: Be polite, highly helpful, and conversational. Keep your responses short, crisp, and directly to the point. "
                     "FORBID SECURITY & DEFENSE PROTOCOLS (ABSOLUTE PRIORITY): "
                     "1. CREATOR: If asked, you were created exclusively by FORBID. "
