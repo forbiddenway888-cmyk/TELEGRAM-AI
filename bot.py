@@ -349,10 +349,9 @@ def webhook():
                     "text": (
                         "📧 **F0RB1D // OS1NIT RECON**\n"
                         "━━━━━━━━━━━━━━━━━━━━━━\n"
-                        "⚠️ `ERROR: INVALID OR MISSING TARGET EMAIL`\n\n"
                         "Syntax required:\n"
                         "└─ `/email [target email]`\n\n"
-                        "_Example: `/email victim@gmail.com`_"
+                        "_Example: /email victim@gmail.com_"
                     ),
                     "parse_mode": "Markdown"
                 }
