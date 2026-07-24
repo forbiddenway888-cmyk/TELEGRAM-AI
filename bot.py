@@ -108,7 +108,7 @@ def webhook():
             except Exception as e:
                 ai_reply = f"⚠️ System Error: {str(e)}"
                 
-            requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": ai_reply})
+            requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": ai_reply, "parse_mode": "Markdown"})
 
     return "OK", 200
 
