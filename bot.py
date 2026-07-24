@@ -11,10 +11,39 @@ TOKEN = os.getenv("BOT_TOKEN")
 TELEGRAM_API = f"https://api.telegram.org/bot{TOKEN}"
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 USER_MEMORY = {}
+USER_STATE = {}  # Tracks if a user is waiting to send an image prompt
 
 @app.route("/", methods=["GET"])
 def index():
     return "⚡ F0RB1D PROTOCOL ONLINE", 200
+
+def generate_image(chat_id, prompt):
+    if chat_id not in USER_CREDITS:
+        USER_CREDITS[chat_id] = STARTING_DIAMONDS
+        
+    if USER_CREDITS[chat_id] <= 0:
+        payload = {"chat_id": chat_id, "text": "🚫 **ACCESS DENIED**\n\nYou have 0 💎 left.", "parse_mode": "Markdown"}
+        requests.post(f"{TELEGRAM_API}/sendMessage", json=payload)
+        return
+
+    # Deduct 1 Diamond
+    USER_CREDITS[chat_id] -= 1
+    current_balance = USER_CREDITS[chat_id]
+    
+    # Notify user rendering started
+    load_payload = {"chat_id": chat_id, "text": "🎨 `RENDERING PIXELS...`", "parse_mode": "Markdown"}
+    requests.post(f"{TELEGRAM_API}/sendMessage", json=load_payload)
+    
+    safe_prompt = urllib.parse.quote(prompt)
+    image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?nologo=true"
+    
+    payload = {
+        "chat_id": chat_id,
+        "photo": image_url,
+        "caption": f"⚡ **Generated:** {prompt}\n💎 **Diamonds remaining:** {current_balance}",
+        "parse_mode": "Markdown"
+    }
+    requests.post(f"{TELEGRAM_API}/sendPhoto", json=payload)
 
 @app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
@@ -65,32 +94,21 @@ def webhook():
         elif text.startswith("/image") or text == "🎨 Image":
             prompt = text.replace("/image", "").strip() if text.startswith("/image") else ""
             
+            # If they provided a prompt in the same command (e.g. "/image cyberpunk city")
             if prompt:
-                # 1. SEND INITIAL PROGRESS BAR
-                load_payload = {"chat_id": chat_id, "text": "⚡ `[██░░░░░░░░] 20% - RENDERING PIXELS...`", "parse_mode": "Markdown"}
-                loading_msg = requests.post(f"{TELEGRAM_API}/sendMessage", json=load_payload).json()
-                msg_id = loading_msg["result"]["message_id"]
-                
-                # 2. FAKE A "LIVE" UPDATE
-                mid_payload = {"chat_id": chat_id, "message_id": msg_id, "text": "⚡ `[████████░░] 89% - UPSCALING RESOLUTION...`", "parse_mode": "Markdown"}
-                requests.post(f"{TELEGRAM_API}/editMessageText", json=mid_payload)
-                
-                # 3. FETCH AND SEND IMAGE
-                safe_prompt = urllib.parse.quote(prompt)
-                image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?nologo=true"
-                
-                # Delete the terminal text, swap to the actual picture
-                requests.post(f"{TELEGRAM_API}/deleteMessage", json={"chat_id": chat_id, "message_id": msg_id})
-                
-                payload = {
-                    "chat_id": chat_id,
-                    "photo": image_url,
-                    "caption": f"⚡ Generated Via Forbid API: {prompt}"
-                }
-                requests.post(f"{TELEGRAM_API}/sendPhoto", json=payload)
+                # Trigger image generation directly
+                generate_image(chat_id, prompt)
             else:
-                payload = {"chat_id": chat_id, "text": "To generate an image, type `/image [your idea]`"}
-                requests.post(f"{TELEGRAM_API}/sendMessage", json=payload)
+                # Set user state so their VERY NEXT message becomes the image prompt
+                USER_STATE[chat_id] = "AWAITING_IMAGE_PROMPT"
+                
+                msg = (
+                    "🎨 **F0RB1D // VISUAL ENGINE**\n"
+                    "━━━━━━━━━━━━━━━━━━━━━━\n"
+                    "Send your image description in the next message.\n\n"
+                    "└─ _Awaiting visual prompt..._"
+                )
+                requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": msg, "parse_mode": "Markdown"})
 
         # 4. SYSTEM OPS
         elif text.startswith("/ops") or text == "📡 Ops":
