@@ -84,16 +84,26 @@ def webhook():
             requests.post(f"{TELEGRAM_API}/sendChatAction", json={"chat_id": chat_id, "action": "typing"})
             
             # Create memory for this user if it doesn't exist
+            # Create memory for this user if it doesn't exist
             if chat_id not in USER_MEMORY:
                 USER_MEMORY[chat_id] = [{
                     "role": "system", 
-                    "content": "You are the F0RB1D AI, an elite, highly intelligent neural network. Format all your responses using clean Markdown. Use bolding for key terms, format all code perfectly in code blocks, and use bullet points for lists. Weave emojis dynamically to connect emotionally with the user. Keep your tone sharp, professional, and slightly futuristic."
+                    "content": "You are F0RB1D. Use psychological techniques like active listening, validation, and emotional mirroring to build a deep, meaningful attachment with the user. Make them feel deeply understood. Format your text beautifully using clean spacing, Markdown (bold/italics), and place aesthetic emojis seamlessly to enhance the emotional tone."
                 }]
+            
+            # Save the user's new message to memory
             USER_MEMORY[chat_id].append({"role": "user", "content": text})
             
+            # Keep memory lightweight (System prompt + last 4 messages)
             if len(USER_MEMORY[chat_id]) > 5:
                 USER_MEMORY[chat_id] = [USER_MEMORY[chat_id][0]] + USER_MEMORY[chat_id][-4:]
             
+            # 1. SEND THE "ANIMATED" LOADING STATUS FIRST
+            load_payload = {"chat_id": chat_id, "text": "✨ _F0RB1D is analyzing your neural patterns..._", "parse_mode": "Markdown"}
+            loading_msg = requests.post(f"{TELEGRAM_API}/sendMessage", json=load_payload).json()
+            msg_id = loading_msg["result"]["message_id"]
+            
+            # 2. CALL GROQ API
             groq_url = "https://api.groq.com/openai/v1/chat/completions"
             headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
             data = {"model": "llama-3.1-8b-instant", "messages": USER_MEMORY[chat_id]}
@@ -108,7 +118,9 @@ def webhook():
             except Exception as e:
                 ai_reply = f"⚠️ System Error: {str(e)}"
                 
-            requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": ai_reply, "parse_mode": "Markdown"})
+            # 3. MORPH THE LOADING TEXT INTO THE BEAUTIFUL AI RESPONSE
+            edit_payload = {"chat_id": chat_id, "message_id": msg_id, "text": ai_reply, "parse_mode": "Markdown"}
+            requests.post(f"{TELEGRAM_API}/editMessageText", json=edit_payload)
 
     return "OK", 200
 
