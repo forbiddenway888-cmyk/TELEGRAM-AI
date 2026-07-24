@@ -90,39 +90,17 @@ def webhook():
             )
             requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": intro_msg, "parse_mode": "Markdown"})
 
-        # 3. IMAGE GENERATOR (Pure & Free)
-        elif text.startswith("/image") or text == "🎨 Image":
-            prompt = text.replace("/image", "").strip() if text.startswith("/image") else ""
-            
-            # If they provided a prompt right away
-            if prompt:
-                load_payload = {"chat_id": chat_id, "text": "🎨 `RENDERING PIXELS...`", "parse_mode": "Markdown"}
-                loading_msg = requests.post(f"{TELEGRAM_API}/sendMessage", json=load_payload).json()
-                msg_id = loading_msg["result"]["message_id"]
-                
-                safe_prompt = urllib.parse.quote(prompt)
-                image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?nologo=true"
-                
-                # Delete the loading text and send the photo
-                requests.post(f"{TELEGRAM_API}/deleteMessage", json={"chat_id": chat_id, "message_id": msg_id})
-                
-                payload = {
-                    "chat_id": chat_id,
-                    "photo": image_url,
-                    "caption": f"⚡ Generated: {prompt}"
-                }
-                requests.post(f"{TELEGRAM_API}/sendPhoto", json=payload)
-            else:
-                # Set user state so their next message becomes the prompt
-                USER_STATE[chat_id] = "AWAITING_IMAGE_PROMPT"
-                
-                msg = (
-                    "🎨 **F0RB1D // VISUAL ENGINE**\n"
-                    "━━━━━━━━━━━━━━━━━━━━━━\n"
-                    "Send your image description in the next message.\n\n"
-                    "└─ _Awaiting visual prompt..._"
-                )
-                requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": msg, "parse_mode": "Markdown"})
+        # IMAGE GENERATOR (Zero Bandwidth)
+        elif text.startswith("/image"):
+            prompt = text.replace("/image", "").strip() or "cyberpunk city"
+            safe_prompt = urllib.parse.quote(prompt)
+            image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?nologo=true"
+            payload = {
+                "chat_id": chat_id,
+                "photo": image_url,
+                "caption": f"⚡ Generated: {prompt}"
+            }
+            requests.post(f"{TELEGRAM_API}/sendPhoto", json=payload)
 
         # 4. SYSTEM OPS
         elif text.startswith("/ops") or text == "📡 Ops":
