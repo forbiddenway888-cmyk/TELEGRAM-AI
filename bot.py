@@ -98,12 +98,16 @@ def webhook():
             if len(USER_MEMORY[chat_id]) > 5:
                 USER_MEMORY[chat_id] = [USER_MEMORY[chat_id][0]] + USER_MEMORY[chat_id][-4:]
             
-            # 1. SEND THE "ANIMATED" LOADING STATUS FIRST
-            load_payload = {"chat_id": chat_id, "text": "✨ _F0RB1D is analyzing your neural patterns..._", "parse_mode": "Markdown"}
+            # 1. SEND INITIAL HACKER PROGRESS BAR
+            load_payload = {"chat_id": chat_id, "text": "⚡ `[██░░░░░░░░] 20% - INITIATING NEURAL LINK...`", "parse_mode": "Markdown"}
             loading_msg = requests.post(f"{TELEGRAM_API}/sendMessage", json=load_payload).json()
             msg_id = loading_msg["result"]["message_id"]
             
-            # 2. CALL GROQ API
+            # 2. FAKE A "LIVE" UPDATE (Creates the illusion of a fast loading sequence)
+            mid_payload = {"chat_id": chat_id, "message_id": msg_id, "text": "⚡ `[████████░░] 89% - DECRYPTING PATTERNS...`", "parse_mode": "Markdown"}
+            requests.post(f"{TELEGRAM_API}/editMessageText", json=mid_payload)
+            
+            # 3. CALL GROQ API
             groq_url = "https://api.groq.com/openai/v1/chat/completions"
             headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
             data = {"model": "llama-3.1-8b-instant", "messages": USER_MEMORY[chat_id]}
