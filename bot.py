@@ -51,17 +51,17 @@ def webhook():
 
         # 2. TRIGGER THE AI PROMPT
         elif text.startswith("/ai") or text == "🤖 AI":
-            # --- PER-USER ANTI-SPAM SHIELD ---
-        current_time = time.time()
-        last_time = USER_LAST_MSG_TIME.get(chat_id, 0)
-        
-        if current_time - last_time < 3:
-            remaining = round(3 - (current_time - last_time), 1)
-            cooldown_msg = f"⏳ **SYSTEM OVERLOAD**\nProtocol locked. Please wait `{remaining}s` before next query."
-            requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": cooldown_msg, "parse_mode": "Markdown"})
-            return "OK", 200
-        
-        USER_LAST_MSG_TIME[chat_id] = current_time
+                # --- PER-USER ANTI-SPAM SHIELD ---
+            current_time = time.time()
+            last_time = USER_LAST_MSG_TIME.get(chat_id, 0)
+            
+            if current_time - last_time < 3:
+                remaining = round(3 - (current_time - last_time), 1)
+                cooldown_msg = f"⏳ **SYSTEM OVERLOAD**\nProtocol locked. Please wait `{remaining}s` before next query."
+                requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": cooldown_msg, "parse_mode": "Markdown"})
+                return "OK", 200
+            
+            USER_LAST_MSG_TIME[chat_id] = current_time
         # ---------------------------------
             # --------------------------
 
