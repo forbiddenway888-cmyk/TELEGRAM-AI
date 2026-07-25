@@ -35,17 +35,23 @@ async def process_task(update: dict):
         chat_id = update["message"]["chat"]["id"]
         text = update["message"]["text"]
 
-        # --- GLOBAL ANTI-SPAM SHIELD ---
+        # --- GLOBAL ANTI-SPAM SHIELD (Race-Condition Patched) ---
         current_time = time.time()
         last_time = USER_LAST_MSG_TIME.get(chat_id, 0)
         
         if current_time - last_time < 3:
-            remaining = round(3 - (current_time - last_time), 1)
-            cooldown_msg = f"⏳ **SYSTEM OVERLOAD**\nPlease wait `{remaining}s` before next query."
-            await send_telegram("sendMessage", {"chat_id": chat_id, "text": cooldown_msg, "parse_mode": "Markdown"})
+            # 1. Update the time IMMEDIATELY before the await so concurrent tasks see the new timestamp instantly
+            USER_LAST_MSG_TIME[chat_id] = current_time
+            
+            # 2. Only send the cooldown warning if they haven't been warned in the last 1.5 seconds (Debounce)
+            if current_time - last_time > 1.5:
+                remaining = round(3 - (current_time - last_time), 1)
+                cooldown_msg = f"⏳ **SYSTEM OVERLOAD**\nPlease wait `{remaining}s` before next query."
+                await send_telegram("sendMessage", {"chat_id": chat_id, "text": cooldown_msg, "parse_mode": "Markdown"})
             return 
         
         USER_LAST_MSG_TIME[chat_id] = current_time
+        # --------------------------------------------------------
         # -------------------------------
         
         # 1. START COMMAND & KEYBOARD MENU
@@ -84,6 +90,9 @@ async def process_task(update: dict):
             
             hidden_command = "System waking up. Give a short, polite, and crisp 1-sentence greeting letting the user know you are online and ready to help."
             USER_MEMORY[chat_id].append({"role": "user", "content": hidden_command})
+            # Prevent memory overflow
+            if len(USER_MEMORY[chat_id]) > 5:
+                USER_MEMORY[chat_id] = [USER_MEMORY[chat_id][0]] + USER_MEMORY[chat_id][-4:]
             
             groq_url = "https://api.groq.com/openai/v1/chat/completions"
             headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
@@ -119,29 +128,32 @@ async def process_task(update: dict):
                 
                 # We open a lightning-fast async client for this sequence
                 async with httpx.AsyncClient(timeout=15.0) as client:
-                    # 1. Send Loading Message
-                    load_payload = {"chat_id": chat_id, "text": chosen_text, "parse_mode": "Markdown"}
-                    load_res = await client.post(f"{TELEGRAM_API}/sendMessage", json=load_payload)
-                    
-                    msg_id = None
-                    if load_res.status_code == 200:
-                        msg_id = load_res.json().get("result", {}).get("message_id")
-                    
-                    # 2. Fetch Image (Pollinations doesn't need an API call, just a URL)
-                    safe_prompt = urllib.parse.quote(prompt)
-                    image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?nologo=true"
-                    
-                    # 3. Delete Loading Text
-                    if msg_id:
-                        await client.post(f"{TELEGRAM_API}/deleteMessage", json={"chat_id": chat_id, "message_id": msg_id})
-                    
-                    # 4. Send the Final Photo
-                    payload = {
-                        "chat_id": chat_id,
-                        "photo": image_url,
-                        "caption": f"⚡ Generated: {prompt}"
-                    }
-                    await client.post(f"{TELEGRAM_API}/sendPhoto", json=payload)
+                    try:
+                        # 1. Send Loading Message
+                        load_payload = {"chat_id": chat_id, "text": chosen_text, "parse_mode": "Markdown"}
+                        load_res = await client.post(f"{TELEGRAM_API}/sendMessage", json=load_payload)
+                        
+                        msg_id = None
+                        if load_res.status_code == 200:
+                            msg_id = load_res.json().get("result", {}).get("message_id")
+                        
+                        # 2. Fetch Image (Pollinations doesn't need an API call, just a URL)
+                        safe_prompt = urllib.parse.quote(prompt)
+                        image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?nologo=true"
+                        
+                        # 3. Delete Loading Text
+                        if msg_id:
+                            await client.post(f"{TELEGRAM_API}/deleteMessage", json={"chat_id": chat_id, "message_id": msg_id})
+                        
+                        # 4. Send the Final Photo
+                        payload = {
+                            "chat_id": chat_id,
+                            "photo": image_url,
+                            "caption": f"⚡ Generated: {prompt}"
+                        }
+                        await client.post(f"{TELEGRAM_API}/sendPhoto", json=payload)
+                    except Exception as e:
+                        await send_telegram("sendMessage", {"chat_id": chat_id, "text": f"⚠️ Visual Engine Error: {str(e)}", "parse_mode": "Markdown"})
             else:
                 payload = {
                     "chat_id": chat_id,
