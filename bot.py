@@ -5,6 +5,9 @@ import urllib.parse
 import time
 import threading
 import random
+import re
+import phonenumbers
+from phonenumbers import geocoder, carrier, timezone
 
 app = Flask(__name__)
 
@@ -165,8 +168,6 @@ def webhook():
                 requests.post(f"{TELEGRAM_API}/sendChatAction", json={"chat_id": chat_id, "action": "typing"})
                 
                 try:
-                    import phonenumbers
-                    from phonenumbers import geocoder, carrier, timezone
 
                     clean_input = phone_number.replace(" ", "")
                     if not clean_input.startswith("+"):
@@ -221,7 +222,7 @@ def webhook():
             # Filter out both the command and the button text to get the raw email
             target_email = text.replace("/email", "").replace("📧 Email Info", "").strip().lower()
             
-            import re
+
             if target_email and re.match(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$", target_email):
                 requests.post(f"{TELEGRAM_API}/sendChatAction", json={"chat_id": chat_id, "action": "typing"})
                 
