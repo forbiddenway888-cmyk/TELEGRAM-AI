@@ -148,7 +148,7 @@ def webhook():
                         "━━━━━━━━━━━━━━━━━━━━━━\n"
                         "Syntax required:\n"
                         "└─ `/image [Your Prompt]`\n\n"
-                        "_Example: `/image cyber samurai in neon rain`_"
+                        "_Example: /image cyber samurai in neon rain_"
                     ),
                     "parse_mode": "Markdown"
                 }
@@ -188,7 +188,7 @@ def webhook():
                             f"📍 **Region:** `{num_location}`\n"
                             f"⏰ **Timezone:** `{time_zones}`\n"
                             "━━━━━━━━━━━━━━━━━━━━━━\n"
-                            "⚡ _Source: Forbid Ai Database_"
+                            "⚡ _Source: Forbid AI Database_"
                         )
                     else:
                         result_msg = f"📡 **F0RB1D // INTEL REPORT**\n━━━━━━━━━━━━━━━━━━━━━━\n❌ Target `{phone_number}` is not a valid international format."
@@ -206,7 +206,7 @@ def webhook():
                         "━━━━━━━━━━━━━━━━━━━━━━\n"
                         "Syntax required:\n"
                         "└─ `/num [phone number]`\n\n"
-                        "_Example: `/num +919876543210`_"
+                        "_Example: /num +919876543210_"
                     ),
                     "parse_mode": "Markdown"
                 }
