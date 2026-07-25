@@ -25,6 +25,26 @@ async def send_telegram(endpoint: str, payload: dict):
         except Exception as e:
             print(f"Telegram Error: {e}")
 
+# --- SAFE LONG MESSAGE & MARKDOWN DISPATCHER ---
+async def send_safe_ai_reply(chat_id: int, text: str):
+    # 1. Chunk text if it exceeds Telegram's 4096 limit
+    max_len = 4000
+    chunks = [text[i:i + max_len] for i in range(0, len(text), max_len)]
+    
+    for chunk in chunks:
+        # Try sending with Markdown formatting first
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            res = await client.post(
+                f"{TELEGRAM_API}/sendMessage",
+                json={"chat_id": chat_id, "text": chunk, "parse_mode": "Markdown"}
+            )
+            # If Telegram rejects due to broken Markdown formatting, retry as raw text
+            if res.status_code != 200:
+                await client.post(
+                    f"{TELEGRAM_API}/sendMessage",
+                    json={"chat_id": chat_id, "text": chunk}
+                )
+
 @app.get("/")
 async def index():
     return {"status": "F0RB1D PROTOCOL ONLINE"}
@@ -58,8 +78,8 @@ async def process_task(update: dict):
         if text.startswith("/start"):
             keyboard_layout = {
                 "keyboard": [
-                    [{"text": "🤖 AI"}, {"text": "🎨 Image"}],
-                    [{"text": "📡 Num Info"}, {"text": "📧 Email Info"}]
+                    [{"text": "🤖 AI & 🎨 Image"}],
+                    [{"text": "📧 Email & 📡 Num Info"}]
                 ],
                 "resize_keyboard": True
             }
@@ -72,6 +92,25 @@ async def process_task(update: dict):
             }
             # REPLACED REQUESTS.POST WITH THE FAST ASYNC HELPER:
             await send_telegram("sendMessage", payload)
+
+        # 1.5 COMBINED PROTOCOL HELP HANDLERS
+        elif text == "🤖 AI & 🎨 Image":
+            help_msg = (
+                "⚡ **F0RB1D // NEURAL & VISUAL MATRIX**\n"
+                "━━━━━━━━━━━━━━━━━━━━━━\n"
+                "💬 **AI Chat:** Type any message directly to chat with AI.\n"
+                "🎨 **Image Gen:** Type `/image [prompt]` to generate visuals."
+            )
+            await send_telegram("sendMessage", {"chat_id": chat_id, "text": help_msg, "parse_mode": "Markdown"})
+
+        elif text == "📧 Email & 📡 Num Info":
+            help_msg = (
+                "⚡ **F0RB1D // RECON & INTEL MATRIX**\n"
+                "━━━━━━━━━━━━━━━━━━━━━━\n"
+                "📧 **Email Recon:** Type `/email [target email]`\n"
+                "📡 **Number Intel:** Type `/num [phone number]`"
+            )
+            await send_telegram("sendMessage", {"chat_id": chat_id, "text": help_msg, "parse_mode": "Markdown"})
 
         # 2. TRIGGER THE AI PROMPT
         elif text.startswith("/ai") or text == "🤖 AI":
@@ -109,7 +148,7 @@ async def process_task(update: dict):
                 except Exception as e:
                     ai_reply = f"⚠️ System Error: {str(e)}"
                 
-            await send_telegram("sendMessage", {"chat_id": chat_id, "text": ai_reply, "parse_mode": "Markdown"})
+            await send_safe_ai_reply(chat_id, ai_reply)
 
             
 
@@ -374,7 +413,7 @@ async def process_task(update: dict):
                 except Exception as e:
                     ai_reply = f"⚠️ System Error: {str(e)}"
                 
-            await send_telegram("sendMessage", {"chat_id": chat_id, "text": ai_reply, "parse_mode": "Markdown"})
+            await send_safe_ai_reply(chat_id, ai_reply)
 
 
     # The Webhook Gatekeeper (Zero Bandwidth Waste)
