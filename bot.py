@@ -27,11 +27,22 @@ def webhook():
         chat_id = update["message"]["chat"]["id"]
         text = update["message"]["text"]
 
-            
-        # ----------------------
-
-        # 1. START COMMAND & KEYBOARD MENU
+        # --- 1. GLOBAL ANTI-SPAM SHIELD ---
+        current_time = time.time()
+        last_time = USER_LAST_MSG_TIME.get(chat_id, 0)
+        
+        if current_time - last_time < 3:
+            remaining = round(3 - (current_time - last_time), 1)
+            cooldown_msg = f"⏳ **SYSTEM OVERLOAD**\nPlease wait `{remaining}s` before next query."
+            requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": cooldown_msg, "parse_mode": "Markdown"})
+            return "OK", 200
+        
+        USER_LAST_MSG_TIME[chat_id] = current_time
+        # ----------------------------------
+        
+        # 2. START COMMAND & KEYBOARD MENU
         if text.startswith("/start"):
+        # ... (the rest of your code)
             # The custom button layout
             keyboard_layout = {
                 "keyboard": [
@@ -52,16 +63,7 @@ def webhook():
         # 2. TRIGGER THE AI PROMPT
         elif text.startswith("/ai") or text == "🤖 AI":
                 # --- PER-USER ANTI-SPAM SHIELD ---
-            current_time = time.time()
-            last_time = USER_LAST_MSG_TIME.get(chat_id, 0)
-            
-            if current_time - last_time < 3:
-                remaining = round(3 - (current_time - last_time), 1)
-                cooldown_msg = f"⏳ **SYSTEM OVERLOAD**\nProtocol locked. Please wait `{remaining}s` before next query."
-                requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": cooldown_msg, "parse_mode": "Markdown"})
-                return "OK", 200
-            
-            USER_LAST_MSG_TIME[chat_id] = current_time
+        
         # ---------------------------------
             # --------------------------
 
@@ -155,16 +157,7 @@ def webhook():
         # 4. NUMBER INFO LOOKUP (Local Offline Engine)
         # --------------------------------------------------
         elif text.startswith("/num") or text == "📡 Num Info":
-            current_time = time.time()
-            last_time = USER_LAST_MSG_TIME.get(chat_id, 0)
-            
-            if current_time - last_time < 3:
-                remaining = round(3 - (current_time - last_time), 1)
-                cooldown_msg = f"⏳ **SYSTEM OVERLOAD**\nPlease wait `{remaining}s` before next query."
-                requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": cooldown_msg, "parse_mode": "Markdown"})
-                return "OK", 200
-            
-            USER_LAST_MSG_TIME[chat_id] = current_time
+        
 
             phone_number = text.replace("/num", "").replace("📡 Num Info", "").strip()
             
@@ -223,16 +216,7 @@ def webhook():
         # 5. F0RB1D // DEEP EMAIL RECON & LEAK MATRIX
         # --------------------------------------------------
         elif text.startswith("/email") or text == "📧 Email Info":
-            current_time = time.time()
-            last_time = USER_LAST_MSG_TIME.get(chat_id, 0)
-            
-            if current_time - last_time < 3:
-                remaining = round(3 - (current_time - last_time), 1)
-                cooldown_msg = f"⏳ **SYSTEM OVERLOAD**\nPlease wait `{remaining}s` before next query."
-                requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": cooldown_msg, "parse_mode": "Markdown"})
-                return "OK", 200
-            
-            USER_LAST_MSG_TIME[chat_id] = current_time
+        
 
             # Filter out both the command and the button text to get the raw email
             target_email = text.replace("/email", "").replace("📧 Email Info", "").strip().lower()
@@ -360,17 +344,7 @@ def webhook():
         # 6. AUTO-AI CATCH-ALL & MEMORY
         else:
             # --- ANTI-SPAM COOLDOWN ---
-            current_time = time.time()
-            last_time = USER_LAST_MSG_TIME.get(chat_id, 0)
-            
-            if current_time - last_time < 3:
-                # If they message faster than 3 seconds, warn them and stop the code
-                cooldown_msg = "⏳ **SYSTEM COOLDOWN**\nPlease wait 3 seconds before sending another message."
-                requests.post(f"{TELEGRAM_API}/sendMessage", json={"chat_id": chat_id, "text": cooldown_msg, "parse_mode": "Markdown"})
-                return "OK", 200  # Exits the function immediately, protecting the Groq API
-            
-            # If they pass the check, update their timestamp for next time
-            USER_LAST_MSG_TIME[chat_id] = current_time
+        
             # --------------------------
 
             requests.post(f"{TELEGRAM_API}/sendChatAction", json={"chat_id": chat_id, "action": "typing"})
