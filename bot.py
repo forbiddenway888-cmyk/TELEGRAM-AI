@@ -178,13 +178,21 @@ async def process_task(update: dict):
                         if msg_id:
                             await client.post(f"{TELEGRAM_API}/deleteMessage", json={"chat_id": chat_id, "message_id": msg_id})
                         
-                        # 4. Send the Final Photo
+                        # 4. Send the Final Photo with Auto-Delete Timer
                         payload = {
                             "chat_id": chat_id,
                             "photo": image_url,
-                            "caption": f"⚡ Generated: {prompt}"
+                            "caption": f"⚡ Generated: {prompt}\n\n⏳ _Self-destructing in 20 seconds..._",
+                            "parse_mode": "Markdown"
                         }
-                        await client.post(f"{TELEGRAM_API}/sendPhoto", json=payload)
+                        photo_res = await client.post(f"{TELEGRAM_API}/sendPhoto", json=payload)
+
+                        # 5. Launch non-blocking background auto-delete timer (20s)
+                        if photo_res.status_code == 200:
+                            photo_msg_id = photo_res.json().get("result", {}).get("message_id")
+                            if photo_msg_id:
+                                asyncio.create_task(auto_delete_msg(chat_id, photo_msg_id, 20))
+                                
                     except Exception as e:
                         await send_telegram("sendMessage", {"chat_id": chat_id, "text": f"⚠️ Visual Engine Error: {str(e)}", "parse_mode": "Markdown"})
             else:
@@ -194,7 +202,7 @@ async def process_task(update: dict):
                         "🎨 **F0RB1D // VISUAL ENGINE**\n"
                         "━━━━━━━━━━━━━━━━━━━━━━\n"
                         "Syntax required:\n"
-                        "└─ `/image [Your Prompt]`\n\n"
+                        "└─ /image [Your Prompt]\n\n"
                         "_Example: /image cyber samurai in neon rain_"
                     ),
                     "parse_mode": "Markdown"
