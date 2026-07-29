@@ -1,3 +1,4 @@
+import asyncio
 import os
 import time
 import urllib.parse
@@ -44,6 +45,18 @@ async def send_safe_ai_reply(chat_id: int, text: str):
                     f"{TELEGRAM_API}/sendMessage",
                     json={"chat_id": chat_id, "text": chunk}
                 )
+
+# --- AUTO-DELETE HELPER (NON-BLOCKING) ---
+async def auto_delete_msg(chat_id: int, message_id: int, delay: int = 20):
+    await asyncio.sleep(delay)
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            await client.post(
+                f"{TELEGRAM_API}/deleteMessage",
+                json={"chat_id": chat_id, "message_id": message_id}
+            )
+        except Exception as e:
+            print(f"Auto-delete error: {e}")
 
 @app.get("/")
 async def index():
