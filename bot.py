@@ -72,14 +72,12 @@ async def process_task(update: dict):
         
         USER_LAST_MSG_TIME[chat_id] = current_time
         # --------------------------------------------------------
-        # -------------------------------
-        
         # 1. START COMMAND & KEYBOARD MENU
         if text.startswith("/start"):
             keyboard_layout = {
                 "keyboard": [
-                    [{"text": "🤖 AI & 🎨 Image"}],
-                    [{"text": "📧 Email & 📡 Num Info"}]
+                    [{"text": "🤖 AI"}, {"text": "🎨 Image"}],
+                    [{"text": "📧 Email Info"}, {"text": "📡 Num Info"}]
                 ],
                 "resize_keyboard": True
             }
@@ -93,24 +91,7 @@ async def process_task(update: dict):
             # REPLACED REQUESTS.POST WITH THE FAST ASYNC HELPER:
             await send_telegram("sendMessage", payload)
 
-        # 1.5 COMBINED PROTOCOL HELP HANDLERS
-        elif text == "🤖 AI & 🎨 Image":
-            help_msg = (
-                "⚡ **F0RB1D // NEURAL & VISUAL MATRIX**\n"
-                "━━━━━━━━━━━━━━━━━━━━━━\n"
-                "💬 **AI Chat:** Type any message directly to chat with AI.\n"
-                "🎨 **Image Gen:** Type `/image [prompt]` to generate visuals."
-            )
-            await send_telegram("sendMessage", {"chat_id": chat_id, "text": help_msg, "parse_mode": "Markdown"})
-
-        elif text == "📧 Email & 📡 Num Info":
-            help_msg = (
-                "⚡ **F0RB1D // RECON & INTEL MATRIX**\n"
-                "━━━━━━━━━━━━━━━━━━━━━━\n"
-                "📧 **Email Recon:** Type `/email [target email]`\n"
-                "📡 **Number Intel:** Type `/num [phone number]`"
-            )
-            await send_telegram("sendMessage", {"chat_id": chat_id, "text": help_msg, "parse_mode": "Markdown"})
+    
 
         # 2. TRIGGER THE AI PROMPT
         elif text.startswith("/ai") or text == "🤖 AI":
