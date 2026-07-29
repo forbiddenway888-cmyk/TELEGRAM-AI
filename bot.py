@@ -46,10 +46,27 @@ async def send_safe_ai_reply(chat_id: int, text: str):
                     json={"chat_id": chat_id, "text": chunk}
                 )
 
-# --- AUTO-DELETE HELPER (NON-BLOCKING) ---
-async def auto_delete_msg(chat_id: int, message_id: int, delay: int = 20):
-    await asyncio.sleep(delay)
+# --- AUTO-DELETE & LIVE COUNTDOWN HELPER (NON-BLOCKING) ---
+async def auto_delete_msg(chat_id: int, message_id: int, delay: int, prompt: str):
     async with httpx.AsyncClient(timeout=10.0) as client:
+        # 1. The Countdown Loop
+        for remaining in range(delay, 0, -1):
+            try:
+                await client.post(
+                    f"{TELEGRAM_API}/editMessageCaption",
+                    json={
+                        "chat_id": chat_id,
+                        "message_id": message_id,
+                        "caption": f"⚡ Generated: {prompt}\n\n⏳ _Self-destructing in {remaining}s..._",
+                        "parse_mode": "Markdown"
+                    }
+                )
+            except Exception:
+                pass # Ignore if Telegram skips a second due to rate limits
+            
+            await asyncio.sleep(1) # Wait exactly 1 second before the next edit
+        
+        # 2. The Final Deletion
         try:
             await client.post(
                 f"{TELEGRAM_API}/deleteMessage",
@@ -57,7 +74,6 @@ async def auto_delete_msg(chat_id: int, message_id: int, delay: int = 20):
             )
         except Exception as e:
             print(f"Auto-delete error: {e}")
-
 @app.get("/")
 async def index():
     return {"status": "F0RB1D PROTOCOL ONLINE"}
@@ -191,7 +207,7 @@ async def process_task(update: dict):
                         if photo_res.status_code == 200:
                             photo_msg_id = photo_res.json().get("result", {}).get("message_id")
                             if photo_msg_id:
-                                asyncio.create_task(auto_delete_msg(chat_id, photo_msg_id, 20))
+                                asyncio.create_task(auto_delete_msg(chat_id, photo_msg_id, 20, prompt))
                                 
                     except Exception as e:
                         await send_telegram("sendMessage", {"chat_id": chat_id, "text": f"⚠️ Visual Engine Error: {str(e)}", "parse_mode": "Markdown"})
